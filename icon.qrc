@@ -1,0 +1,7 @@
+<RCC>
+    <qresource prefix="/">
+        <file>images/switch-h.png</file>
+        <file>images/switch-v.png</file>
+        <file>images/rotate.png</file>
+    </qresource>
+</RCC>
