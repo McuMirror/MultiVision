@@ -73,6 +73,18 @@ private slots:
 
     void on_bilateralDScrollBar_sliderReleased();
 
+    void on_grayButton_clicked();
+
+    void on_histButton_clicked();
+
+    void on_thresholdScrollBar_sliderReleased();
+
+    void on_thresholdScrollBar_2_sliderReleased();
+
+    void on_thresholdButton_clicked();
+
+    void on_asciiArtButton_clicked();
+
 private:
     Ui::USB_Receiver* ui;
     void updatePortList(); // 更新com口列表
@@ -92,7 +104,7 @@ private:
     unsigned int tickTimeout;
     unsigned int uvcTimeout;
 
-    Xe_QtCVUtils QtCVUtils;
+    // Xe_QtCVUtils QtCVUtils;
     QImage m_image;
     QString onnx = "D:/openCV/onnx_model/face_detection_yunet_2023mar.onnx";
     DetectProcess m_detect;

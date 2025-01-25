@@ -73,6 +73,11 @@ int DetectProcess::visualize(cv::Mat& input, cv::Mat& faces, int thickness)
         circle(input, cv::Point2i(int(faces.at<float>(i, 8)), int(faces.at<float>(i, 9))), 2, cv::Scalar(0, 255, 0), thickness);
         circle(input, cv::Point2i(int(faces.at<float>(i, 10)), int(faces.at<float>(i, 11))), 2, cv::Scalar(255, 0, 255), thickness);
         circle(input, cv::Point2i(int(faces.at<float>(i, 12)), int(faces.at<float>(i, 13))), 2, cv::Scalar(0, 255, 255), thickness);
+
+        std::string text = cv::format("%.2f", faces.at<float>(i, 14));
+        cv::putText(input, text, cv::Point((faces.at<float>(i, 0)), int(faces.at<float>(i, 1))), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 255, 255), thickness);
+        // cv::PolyLine
+
     }
     return 0;
 }

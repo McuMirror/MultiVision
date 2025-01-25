@@ -1,10 +1,17 @@
 #include "usb_receiver.h"
+#include "ft2build.h"
 #include "ui_usb_receiver.h"
 #include "xe_qtcvutils.h"
+
 #include <QMessageBox>
+#include <QRandomGenerator>
+#include <freetype.hpp>
+#include FT_FREETYPE_H
 #include <opencv.hpp>
 #include <opencv2/dnn.hpp>
 #include <opencv2/objdetect/face.hpp>
+#include <opencv_modules.hpp>
+
 using namespace cv;
 
 USB_Receiver::USB_Receiver(QWidget* parent)
@@ -30,8 +37,56 @@ USB_Receiver::USB_Receiver(QWidget* parent)
     uvcTimer->start(uvcTimeout);
     updatePortList();
 
+#define TEST_BLOCK 1
+#if TEST_BLOCK
     cv::utils::logging::setLogLevel(cv::utils::logging::LOG_LEVEL_WARNING);
     QWidget::setAcceptDrops(true);
+
+    for (int i = 20; i < 127; i += 10) {
+        char character = static_cast<char>(i);
+        std::string text(1, character); // 转换为字符串
+        cv::Size textSize = cv::getTextSize(text, 2, 1, 1, nullptr);
+        double width = textSize.width;
+        double height = textSize.height;
+        double aspectRatio = width / height;
+
+        // std::cout << "Width: " << width << ", Height: " << height << ", Aspect Ratio: " << aspectRatio << " :" << text << std::endl;
+    }
+
+    cv::Mat img = cv::Mat::zeros(600, 600, CV_8UC3); //"D:\arial.ttf" JetBrainsMono-Regular
+    img.setTo(cv::Scalar(100, 255, 100)); //
+
+    std::string font_path = "D:/JetBrainsMono-Regular.ttf";
+    cv::Ptr<cv::freetype::FreeType2> ft2 = cv::freetype::createFreeType2();
+    ft2->loadFontData(font_path, 0);
+
+    // 设置文本位置和颜色
+    cv::Point position(0, 50);
+    cv::Scalar color(120, 120, 255); // 白色
+
+    // 使用指定字体绘制文本
+    int thickness = -1;
+    int font_size = 16; // 设置字体大小
+    int font_width = 10; // 设置字体大小
+    for (int l = 0; l < 20; l++) {
+        QString lineText;
+        int randomNumber = QRandomGenerator::global()->bounded('A', 'z');
+        for (int i = 0; i < 20; i++) {
+
+            lineText.append(QChar(randomNumber));
+        }
+
+        //        auto tsize = ft2->getTextSize(lineText.toStdString(), font_size, thickness, 0);
+        //        qDebug() << l << "(" << tsize.height << "," << tsize.width << ")";
+
+        position.y += font_size;
+        vector<string> stringText = { lineText.toStdString() };
+        Xe_QtCVUtils::drawTextWithAsciiTable(ft2, stringText, img, position, font_width, font_size, color, thickness, LINE_8);
+    }
+
+    cv::imshow("Text with TTF Font", img);
+
+#endif
 }
 USB_Receiver::~USB_Receiver()
 {
@@ -110,7 +165,7 @@ void USB_Receiver::proceses()
     // QImage ..->..Mat
     cv::Mat mat;
 
-    if (QtCVUtils.QImgToMat(m_image, mat) != 0)
+    if (Xe_QtCVUtils::qImgToMat(m_image, mat) != 0)
         return;
     proceses(mat);
 }
@@ -121,13 +176,13 @@ void USB_Receiver::proceses(cv::Mat& mat)
 
     if (ui->blurButton->isChecked()) {
 
-        Xe_QtCVUtils::FilterAveraging(mat, mat, ui->blurKernelBox->value());
+        Xe_QtCVUtils::filterAveraging(mat, mat, ui->blurKernelBox->value());
         // qDebug() << "averagingFilter success!";
     }
 
     if (ui->gaussianButton->isChecked()) {
 
-        Xe_QtCVUtils::FilterGaussian(mat, mat, ui->gaussianKernelSpinBox->value(), ui->gaussianScrollBar->value() / 10);
+        Xe_QtCVUtils::filterGaussian(mat, mat, ui->gaussianKernelSpinBox->value(), ui->gaussianScrollBar->value() / 10);
 
         // qDebug() << "gaussianFilter success!";
     }
@@ -139,16 +194,16 @@ void USB_Receiver::proceses(cv::Mat& mat)
         // 双边滤波器不允许原地修改
         cv::Mat tmp = std::move(mat);
 
-        Xe_QtCVUtils::FilterBilateral(tmp, mat,
+        Xe_QtCVUtils::filterBilateral(tmp, mat,
             ui->bilateralDScrollBar->value(),
             ui->bilateralSCScrollBar->value(),
             ui->bilateralSSScrollBar->value());
-        // qDebug() << "bilateralFilter success!";
+        qDebug() << "bilateralFilter success!";
     }
     if (ui->sobelButton->isChecked()) {
         cv::Mat tmp = std::move(mat);
 
-        Xe_QtCVUtils::EdgeSobel(tmp, mat, 5);
+        Xe_QtCVUtils::edgeSobel(tmp, mat, 5);
 
         //        qDebug() << "sobel sucess : " << mat.size().height
         //                 << "*" << mat.size().width
@@ -157,9 +212,22 @@ void USB_Receiver::proceses(cv::Mat& mat)
         // cv::imshow("sobel", mat);
     }
 
+    // 灰度图/阈值分割
+    if (ui->grayButton->isChecked()) {
+        cv::cvtColor(mat, mat, cv::COLOR_BGR2GRAY);
+        if (ui->histButton->isChecked())
+            Xe_QtCVUtils::hist(mat,
+                ui->thresholdScrollBar->value(),
+                ui->thresholdScrollBar_2->value());
+    }
+
+    if (ui->thresholdButton->isChecked()) {
+        Xe_QtCVUtils::histogramStretching(mat, mat, ui->thresholdScrollBar->value(), ui->thresholdScrollBar_2->value());
+    }
+    // 分割
     if (ui->cannyButton->isChecked()) {
         cv::Mat tmp = std::move(mat);
-        Xe_QtCVUtils::EdgeCanny(tmp, mat,
+        Xe_QtCVUtils::edgeCanny(tmp, mat,
             ui->cannyThreshold1ScrollBar->value(),
             ui->cannyThreshold2ScrollBar->value());
         if (mat.empty())
@@ -171,6 +239,13 @@ void USB_Receiver::proceses(cv::Mat& mat)
 
             // cv::imshow("canny", mat);
         }
+    }
+    if (ui->radioButton->isChecked())
+        cv::bitwise_not(mat, mat);
+
+    if (ui->asciiArtButton->isChecked()) {
+        Xe_QtCVUtils::asciiMat(mat, mat);
+        qDebug() << "asciiMat done";
     }
     if (m_detect.enable) {
         // 判断模型的尺寸与输入图像的图像是否一致
@@ -187,7 +262,7 @@ void USB_Receiver::proceses(cv::Mat& mat)
     // ----end with mat----
 
     QImage disp;
-    int ret = QtCVUtils.MatToQImg(mat, disp); // Mat ..->..QImage
+    int ret = Xe_QtCVUtils::matToQImg(mat, disp); // Mat ..->..QImage
 
     ui->imageWidget->updatePix(disp);
 }
@@ -498,4 +573,33 @@ void USB_Receiver::on_actionsave_triggered()
             QMessageBox::warning(this, tr("Error"), tr("Failed to save the image."));
         }
     }
+}
+
+void USB_Receiver::on_grayButton_clicked()
+{
+    proceses();
+}
+
+void USB_Receiver::on_histButton_clicked()
+{
+}
+
+void USB_Receiver::on_thresholdScrollBar_sliderReleased()
+{
+    proceses();
+}
+
+void USB_Receiver::on_thresholdScrollBar_2_sliderReleased()
+{
+    proceses();
+}
+
+void USB_Receiver::on_thresholdButton_clicked()
+{
+    proceses();
+}
+
+void USB_Receiver::on_asciiArtButton_clicked()
+{
+    proceses();
 }

@@ -2,7 +2,7 @@ QT       += core gui serialport
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
-
+QMAKE_CXXFLAGS_WARN_ON += -Wno-unused-parameter
 CONFIG += c++17
 
 # You can make your code fail to compile if it uses deprecated APIs.
@@ -14,8 +14,12 @@ CONFIG += c++17
 INCLUDEPATH += D:\openCV\build-opencv-4.10.0-Desktop_Qt_6_5_3_MinGW_64_bit-Debug\install\include
 INCLUDEPATH += D:\openCV\build-opencv-4.10.0-Desktop_Qt_6_5_3_MinGW_64_bit-Debug\install\include\opencv2
 
+INCLUDEPATH +=D:\openCV\build-freetype-2.13.3-Desktop_Qt_6_5_3_MinGW_64_bit-Debug\install\include\freetype2
+INCLUDEPATH += D:\openCV\build-freetype-2.13.3-Desktop_Qt_6_5_3_MinGW_64_bit-Debug\install\include\freetype2\freetype
+
 # dll.a files
 LIBS += D:\openCV\build-opencv-4.10.0-Desktop_Qt_6_5_3_MinGW_64_bit-Debug\install\x64\mingw\lib\libopencv*
+LIBS += D:\openCV\build-freetype-2.13.3-Desktop_Qt_6_5_3_MinGW_64_bit-Debug\install\lib\lib*
 
 
 SOURCES += \
