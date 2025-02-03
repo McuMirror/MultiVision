@@ -49,6 +49,7 @@ UtilsStatus initASCIITable(QString s);
 char asciiTable(int c);
 UtilsStatus asciiMat(cv::Mat& src, cv::Mat& dst, int thickness = -1, cv::LineTypes = cv::LINE_4);
 std::vector<std::vector<char>> generateAsciiCharTable(const cv::Mat& input, int font_width, int font_height);
+QString generateAsciiQString(const cv::Mat& src, int font_width, int font_height);
 void drawTextWithAsciiTable(cv::Ptr<cv::freetype::FreeType2> ft2,
     const vector<vector<char>>& Text,
     cv::Mat& img,
@@ -66,6 +67,7 @@ void drawTextWithAsciiTable(cv::Ptr<cv::freetype::FreeType2> ft2,
     int font_high,
     const cv::Scalar& color = cv::Scalar(255),
     int thickness = 1, int line_type = cv::LINE_4);
+QString vectorToQString(const std::vector<std::vector<QChar>>& data);
 UtilsStatus histogramStretching(cv::Mat& src, cv::Mat& dst, int threshold1, int threshold2);
 
 };

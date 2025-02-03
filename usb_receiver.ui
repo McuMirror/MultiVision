@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>927</width>
-    <height>612</height>
+    <width>966</width>
+    <height>627</height>
    </rect>
   </property>
   <property name="acceptDrops">
@@ -436,13 +436,70 @@ color: white; background-color: rgba(119, 25, 170,220);
       </property>
       <layout class="QHBoxLayout" name="horizontalLayout_3">
        <item>
-        <widget class="ImageWidget" name="imageWidget" native="true">
-         <property name="sizePolicy">
-          <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
-           <horstretch>0</horstretch>
-           <verstretch>0</verstretch>
-          </sizepolicy>
+        <widget class="QStackedWidget" name="displayStacked">
+         <property name="currentIndex">
+          <number>1</number>
          </property>
+         <widget class="QWidget" name="page">
+          <layout class="QGridLayout" name="gridLayout_2">
+           <property name="leftMargin">
+            <number>0</number>
+           </property>
+           <property name="topMargin">
+            <number>0</number>
+           </property>
+           <property name="rightMargin">
+            <number>0</number>
+           </property>
+           <property name="bottomMargin">
+            <number>0</number>
+           </property>
+           <property name="spacing">
+            <number>0</number>
+           </property>
+           <item row="0" column="0">
+            <widget class="ImageWidget" name="imageWidget" native="true">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+         <widget class="QWidget" name="page_2">
+          <layout class="QGridLayout" name="gridLayout_3">
+           <property name="leftMargin">
+            <number>0</number>
+           </property>
+           <property name="topMargin">
+            <number>0</number>
+           </property>
+           <property name="rightMargin">
+            <number>0</number>
+           </property>
+           <property name="bottomMargin">
+            <number>0</number>
+           </property>
+           <property name="spacing">
+            <number>0</number>
+           </property>
+           <item row="0" column="1">
+            <widget class="QPlainTextEdit" name="asciiTextBrowser">
+             <property name="styleSheet">
+              <string notr="true">background-color: rgb(85, 0, 0);
+ 
+color: rgb(255, 255, 255);</string>
+             </property>
+             <property name="plainText">
+              <string>aaa</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
         </widget>
        </item>
        <item>
@@ -468,7 +525,7 @@ color: white; background-color: rgba(119, 25, 170,220);
             <x>0</x>
             <y>0</y>
             <width>150</width>
-            <height>296</height>
+            <height>311</height>
            </rect>
           </property>
           <attribute name="label">
@@ -539,7 +596,7 @@ color: white; background-color: rgba(119, 25, 170,220);
             <x>0</x>
             <y>0</y>
             <width>150</width>
-            <height>296</height>
+            <height>311</height>
            </rect>
           </property>
           <attribute name="label">
@@ -931,7 +988,7 @@ color: white; background-color: rgba(119, 25, 170,220);
             <x>0</x>
             <y>0</y>
             <width>150</width>
-            <height>296</height>
+            <height>311</height>
            </rect>
           </property>
           <attribute name="label">
@@ -1060,7 +1117,7 @@ color: white; background-color: rgba(119, 25, 170,220);
             <x>0</x>
             <y>0</y>
             <width>150</width>
-            <height>296</height>
+            <height>311</height>
            </rect>
           </property>
           <attribute name="label">
@@ -1074,13 +1131,13 @@ color: white; background-color: rgba(119, 25, 170,220);
             <number>3</number>
            </property>
            <property name="topMargin">
-            <number>3</number>
+            <number>6</number>
            </property>
            <property name="rightMargin">
             <number>3</number>
            </property>
            <property name="bottomMargin">
-            <number>3</number>
+            <number>6</number>
            </property>
            <item>
             <layout class="QHBoxLayout" name="horizontalLayout_14">
@@ -1132,9 +1189,112 @@ border-color: rgba(119, 25, 170,220);
             </widget>
            </item>
            <item>
+            <widget class="QFontComboBox" name="fontComboBox">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Ignored" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="font">
+              <font>
+               <family>JetBrains Mono</family>
+               <pointsize>9</pointsize>
+              </font>
+             </property>
+             <property name="layoutDirection">
+              <enum>Qt::LeftToRight</enum>
+             </property>
+             <property name="autoFillBackground">
+              <bool>false</bool>
+             </property>
+             <property name="sizeAdjustPolicy">
+              <enum>QComboBox::AdjustToContentsOnFirstShow</enum>
+             </property>
+             <property name="fontFilters">
+              <set>QFontComboBox::MonospacedFonts|QFontComboBox::ScalableFonts</set>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <layout class="QHBoxLayout" name="horizontalLayout_16">
+             <item>
+              <widget class="QLabel" name="fontSizeLabel">
+               <property name="text">
+                <string>font size</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QSpinBox" name="fontSizeSpinBox">
+               <property name="minimum">
+                <number>6</number>
+               </property>
+               <property name="maximum">
+                <number>35</number>
+               </property>
+               <property name="value">
+                <number>9</number>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </item>
+           <item>
+            <layout class="QHBoxLayout" name="horizontalLayout_15">
+             <property name="spacing">
+              <number>1</number>
+             </property>
+             <item>
+              <widget class="QLabel" name="kernelLabel">
+               <property name="text">
+                <string>kernel</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QSpinBox" name="font_w">
+               <property name="keyboardTracking">
+                <bool>false</bool>
+               </property>
+               <property name="minimum">
+                <number>2</number>
+               </property>
+               <property name="maximum">
+                <number>30</number>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QSpinBox" name="font_h">
+               <property name="minimum">
+                <number>2</number>
+               </property>
+               <property name="maximum">
+                <number>50</number>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </item>
+           <item>
+            <layout class="QHBoxLayout" name="horizontalLayout_17">
+             <item>
+              <widget class="QLabel" name="styleLabel">
+               <property name="text">
+                <string>style</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QComboBox" name="styleComboBox"/>
+             </item>
+            </layout>
+           </item>
+           <item>
             <widget class="QPushButton" name="asciiArtButton">
              <property name="sizePolicy">
-              <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+              <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
                <horstretch>0</horstretch>
                <verstretch>0</verstretch>
               </sizepolicy>
@@ -1155,11 +1315,11 @@ border-color: rgba(119, 25, 170,220);
             <x>0</x>
             <y>0</y>
             <width>150</width>
-            <height>296</height>
+            <height>311</height>
            </rect>
           </property>
           <attribute name="label">
-           <string>Detector</string>
+           <string>Face Detector</string>
           </attribute>
           <layout class="QVBoxLayout" name="verticalLayout_2">
            <item>
@@ -1220,7 +1380,7 @@ border-color: rgba(119, 25, 170,220);
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>927</width>
+     <width>966</width>
      <height>21</height>
     </rect>
    </property>

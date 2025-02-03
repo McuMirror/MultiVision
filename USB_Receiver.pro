@@ -26,13 +26,15 @@ SOURCES += \
     detectprocess.cpp \
     main.cpp \
     usb_receiver.cpp \
-    xe_qtcvutils.cpp
+    xe_qtcvutils.cpp \
+    xeimage.cpp
 
 HEADERS += \
     detectprocess.h \
     imagewidget.h \
     usb_receiver.h \
-    xe_qtcvutils.h
+    xe_qtcvutils.h \
+    xeimage.h
 
 FORMS += \
     imagewidget.ui \

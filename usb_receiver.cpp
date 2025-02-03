@@ -7,6 +7,7 @@
 #include <QRandomGenerator>
 #include <freetype.hpp>
 #include FT_FREETYPE_H
+#include <QElapsedTimer>
 #include <opencv.hpp>
 #include <opencv2/dnn.hpp>
 #include <opencv2/objdetect/face.hpp>
@@ -26,20 +27,27 @@ USB_Receiver::USB_Receiver(QWidget* parent)
     tickTimer = new QTimer(this); // stm32-usb虚拟串口接收速率计算
     uvcTimer = new QTimer(this); // UVC 刷新帧
 
+    xm_image = new XeImage();
     connect(tickTimer, &QTimer::timeout, this, &USB_Receiver::on_tickTimeout);
 
     connect(serialPort, &QSerialPort::readyRead, this, &USB_Receiver::onPortReadyRead);
     connect(serialPort, &QSerialPort::errorOccurred, this, &USB_Receiver::onError);
+
+    connect(xm_image, &XeImage::imageUpdated, this, qOverload<>(&USB_Receiver::processes));
 
     tickTimeout = 500;
     tickTimer->start(tickTimeout);
     uvcTimeout = 30;
     uvcTimer->start(uvcTimeout);
     updatePortList();
-
-#define TEST_BLOCK 1
-#if TEST_BLOCK
     cv::utils::logging::setLogLevel(cv::utils::logging::LOG_LEVEL_WARNING);
+
+    initFontsList();
+
+    qDebug() << ui->asciiTextBrowser->font().pointSize();
+#define TEST_BLOCK 0
+#if TEST_BLOCK
+
     QWidget::setAcceptDrops(true);
 
     for (int i = 20; i < 127; i += 10) {
@@ -158,19 +166,49 @@ void USB_Receiver::updateCurrentPortInfo(QString description, QString manufactur
     ui->label_Manufacturer->setText(manufacturer);
 }
 
-void USB_Receiver::proceses()
+void USB_Receiver::initFontsList()
 {
-    if (m_image.isNull())
+
+    QString exeDir = QCoreApplication::applicationDirPath();
+    QDir::setCurrent(exeDir);
+    qDebug() << QDir::currentPath();
+    statusBar()->showMessage(QDir::currentPath());
+    QDir dir("fonts");
+    if (!dir.exists()) {
+        qWarning() << "Folder does not exist:";
+        statusBar()->showMessage("Fonts folder does not exist");
+        return;
+    } else {
+        statusBar()->showMessage("Fonts folder load success");
+        // 遍历文件夹中的所有文件
+        QStringList fontFiles = dir.entryList(QStringList() << "*.ttf"
+                                                            << "*.otf",
+            QDir::Files);
+        for (const QString& fontFile : fontFiles) {
+            QString fontPath = dir.filePath(fontFile);
+            int fontId = QFontDatabase::addApplicationFont(fontPath);
+            if (fontId == -1) {
+                qWarning() << "Failed to load font:" << fontPath;
+            } else {
+                qDebug() << "Loaded font:" << fontPath;
+            }
+        }
+    }
+}
+
+void USB_Receiver::processes()
+{
+    if (xm_image->isNull())
         return;
     // QImage ..->..Mat
     cv::Mat mat;
 
-    if (Xe_QtCVUtils::qImgToMat(m_image, mat) != 0)
+    if (Xe_QtCVUtils::qImgToMat(*xm_image, mat) != 0)
         return;
-    proceses(mat);
+    processes(mat);
 }
 
-void USB_Receiver::proceses(cv::Mat& mat)
+void USB_Receiver::processes(cv::Mat& mat)
 {
     // ----begin with mat----
 
@@ -243,10 +281,23 @@ void USB_Receiver::proceses(cv::Mat& mat)
     if (ui->radioButton->isChecked())
         cv::bitwise_not(mat, mat);
 
+    //  字符画
+    QElapsedTimer _ascii_start;
+
     if (ui->asciiArtButton->isChecked()) {
-        Xe_QtCVUtils::asciiMat(mat, mat);
-        qDebug() << "asciiMat done";
+        static QString asciiQString;
+        asciiQString.clear();
+        asciiQString = Xe_QtCVUtils::generateAsciiQString(mat, ui->font_w->value(), ui->font_h->value());
+        _ascii_start.start();
+
+        // 如果用QTextBrowser，需要消耗几十毫秒；用QPlainTextEdit更快，<1毫秒，因为不需要HTML富文本
+        ui->asciiTextBrowser->setPlainText(asciiQString);
+        //  Xe_QtCVUtils::asciiMat(mat, mat);
+        //  qDebug() << "asciiMat done";
+        return;
     }
+    // qDebug() << "asciiArt 花费时间" << _ascii_start.elapsed();
+
     if (m_detect.enable) {
         // 判断模型的尺寸与输入图像的图像是否一致
         if (m_detect.getInputSize().width() != mat.size().width || m_detect.getInputSize().height() != mat.size().height) {
@@ -270,8 +321,7 @@ void USB_Receiver::proceses(cv::Mat& mat)
 void USB_Receiver::updateImage(QImage& img)
 {
     if (!img.isNull()) {
-        m_image = img;
-        proceses();
+        xm_image->update(img);
     }
 }
 
@@ -299,8 +349,8 @@ void USB_Receiver::dropEvent(QDropEvent* event)
         qDebug() << "Drop Image Suscess";
 
         if (m_detect.enable == true)
-            m_detect.initialization(onnx, m_image.size(), 0.8);
-        proceses();
+            m_detect.initialization(onnx, xm_image->size(), 0.8);
+        processes();
 
     } else
         event->ignore();
@@ -323,6 +373,7 @@ void USB_Receiver::dragLeaveEvent(QDragLeaveEvent* event)
  */
 void USB_Receiver::onPortReadyRead()
 {
+    QImage ss;
 
     QByteArray data = serialPort->readAll();
     int byte_len = data.size();
@@ -332,6 +383,8 @@ void USB_Receiver::onPortReadyRead()
         // 如果发现开始标志，清空缓存并加入新数据
         jpegDataBuffer.clear();
         jpegDataBuffer.append(data);
+        statusBar()->showMessage("find \" FFD8FF \"");
+
     } else if (!jpegDataBuffer.isEmpty()) {
         jpegDataBuffer.append(data); // 如果缓存不为空，但没有发现开始标志，继续追加数据
     }
@@ -340,7 +393,7 @@ void USB_Receiver::onPortReadyRead()
     if (endPos != -1) {
         // 只保留结束标志之前的数据
         QByteArray completeData = jpegDataBuffer + data.left(endPos + 2);
-
+        statusBar()->showMessage("find \" FFD9 \"");
         // 调用渲染函数显示完整 JPEG 数据
         if (completeData.size() > 1000) {
             bytesSum += completeData.size();
@@ -360,17 +413,21 @@ void USB_Receiver::onPortReadyRead()
             }
 
 #endif
-            m_image = QImage::fromData(completeData);
-            m_image.mirror(true, true);
-            proceses();
+            xm_image->update(QImage::fromData(completeData));
+            // m_image.mirror(true, true);
+
             ui->lcdBytes->display(QString::number(completeData.size()));
+        } else {
+
+            statusBar()->showMessage("completeData.size() < 500");
         }
 
         // 清理缓存，丢弃已经处理过的数据
         jpegDataBuffer.clear();
         // 丢弃结束标志后的数据
         data.remove(0, endPos + 2);
-    }
+    } else if (jpegDataBuffer.size() > 1024 * 1024)
+        jpegDataBuffer.clear();
 }
 
 void USB_Receiver::onError(QSerialPort::SerialPortError error)
@@ -422,7 +479,7 @@ void USB_Receiver::on_uvcTimeout()
         return;
     }
 
-    proceses(frame);
+    processes(frame);
 }
 void USB_Receiver::on_switchInputButton_clicked()
 {
@@ -464,9 +521,9 @@ void USB_Receiver::on_detectButton_clicked()
 
     if (ui->detectButton->isChecked()) {
         m_detect.enable = true;
-        if (!m_image.isNull()) {
-            m_detect.initialization(onnx, m_image.size(), 0.8);
-            proceses();
+        if (!xm_image->isNull()) {
+            m_detect.initialization(onnx, xm_image->size(), 0.8);
+            processes();
         }
 
     } else {
@@ -479,30 +536,30 @@ void USB_Receiver::on_detectButton_clicked()
 
 void USB_Receiver::on_blurButton_clicked()
 {
-    proceses();
+    processes();
 }
 void USB_Receiver::on_blurKernelBox_valueChanged(int arg1)
 {
-    proceses();
+    processes();
 }
 void USB_Receiver::on_gaussianButton_clicked()
 {
-    proceses();
+    processes();
 }
 
 void USB_Receiver::on_gaussianKernelSpinBox_valueChanged(int arg1)
 {
-    proceses();
+    processes();
 }
 void USB_Receiver::on_gaussianScrollBar_valueChanged(int value)
 {
     ui->gaussianSigmaLabel->setText(QString("sg:") + QString::number(value / 10.0, 'f', 1));
-    proceses();
+    processes();
 }
 
 void USB_Receiver::on_bilateralButton_clicked()
 {
-    proceses();
+    processes();
 }
 void USB_Receiver::on_bilateralDScrollBar_valueChanged(int value)
 {
@@ -511,7 +568,7 @@ void USB_Receiver::on_bilateralDScrollBar_valueChanged(int value)
 }
 void USB_Receiver::on_bilateralDScrollBar_sliderReleased()
 {
-    proceses();
+    processes();
 }
 
 void USB_Receiver::on_bilateralSCScrollBar_valueChanged(int value)
@@ -520,7 +577,7 @@ void USB_Receiver::on_bilateralSCScrollBar_valueChanged(int value)
 }
 void USB_Receiver::on_bilateralSCScrollBar_sliderReleased()
 {
-    proceses();
+    processes();
 }
 
 void USB_Receiver::on_bilateralSSScrollBar_valueChanged(int value)
@@ -530,31 +587,31 @@ void USB_Receiver::on_bilateralSSScrollBar_valueChanged(int value)
 
 void USB_Receiver::on_bilateralSSScrollBar_sliderReleased()
 {
-    proceses();
+    processes();
 }
 
 void USB_Receiver::on_sobelButton_clicked()
 {
-    proceses();
+    processes();
 }
 
 void USB_Receiver::on_cannyButton_clicked()
 {
-    proceses();
+    processes();
 }
 
 void USB_Receiver::on_cannyThreshold1ScrollBar_valueChanged(int value)
 {
     ui->cannyThreshold1Label->setText(QString("th1:") + QString::number(value));
     if (ui->cannyButton->isChecked())
-        proceses();
+        processes();
 }
 
 void USB_Receiver::on_cannyThreshold2ScrollBar_valueChanged(int value)
 {
     ui->cannyThreshold2Label->setText(QString("th2:") + QString::number(value));
     if (ui->cannyButton->isChecked())
-        proceses();
+        processes();
 }
 
 void USB_Receiver::on_actionsave_triggered()
@@ -577,7 +634,7 @@ void USB_Receiver::on_actionsave_triggered()
 
 void USB_Receiver::on_grayButton_clicked()
 {
-    proceses();
+    processes();
 }
 
 void USB_Receiver::on_histButton_clicked()
@@ -586,20 +643,54 @@ void USB_Receiver::on_histButton_clicked()
 
 void USB_Receiver::on_thresholdScrollBar_sliderReleased()
 {
-    proceses();
+    processes();
 }
 
 void USB_Receiver::on_thresholdScrollBar_2_sliderReleased()
 {
-    proceses();
+    processes();
 }
 
 void USB_Receiver::on_thresholdButton_clicked()
 {
-    proceses();
+    processes();
 }
 
 void USB_Receiver::on_asciiArtButton_clicked()
 {
-    proceses();
+
+    if (ui->asciiArtButton->isChecked()) {
+
+        Xe_QtCVUtils::initASCIITable();
+        ui->displayStacked->setCurrentIndex(1);
+    } else {
+        ui->displayStacked->setCurrentIndex(0);
+    }
+
+    processes();
+}
+
+void USB_Receiver::on_fontComboBox_currentFontChanged(const QFont& f)
+{
+
+    // ui->asciiTextBrowser->setPlainText(ui->asciiTextBrowser->toPlainText()); // 清除 HTML 格式
+    ui->asciiTextBrowser->setFont(f);
+}
+
+void USB_Receiver::on_fontSizeSpinBox_valueChanged(int arg1)
+{
+    auto currentFont = ui->asciiTextBrowser->font();
+    currentFont.setPixelSize(arg1);
+
+    ui->asciiTextBrowser->setFont(currentFont);
+}
+
+void USB_Receiver::on_font_w_valueChanged(int arg1)
+{
+    processes();
+}
+
+void USB_Receiver::on_font_h_valueChanged(int arg1)
+{
+    processes();
 }

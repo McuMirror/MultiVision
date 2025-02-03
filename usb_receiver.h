@@ -1,8 +1,8 @@
 #ifndef USB_RECEIVER_H
 #define USB_RECEIVER_H
-
 #include "detectprocess.h"
 #include "xe_qtcvutils.h"
+#include "xeimage.h"
 #include <QDateTime>
 #include <QList>
 #include <QMainWindow>
@@ -23,6 +23,9 @@ class USB_Receiver : public QMainWindow {
 public:
     USB_Receiver(QWidget* parent = nullptr);
     ~USB_Receiver();
+    void processes(cv::Mat& mat);
+public slots:
+    void processes(); // with m_image
 
 private slots:
     void on_refreshPortsButton_clicked();
@@ -85,15 +88,22 @@ private slots:
 
     void on_asciiArtButton_clicked();
 
+    void on_fontComboBox_currentFontChanged(const QFont& f);
+
+    void on_fontSizeSpinBox_valueChanged(int arg1);
+
+    void on_font_w_valueChanged(int arg1);
+
+    void on_font_h_valueChanged(int arg1);
+
 private:
     Ui::USB_Receiver* ui;
     void updatePortList(); // 更新com口列表
     void updateCurrentPortInfo(QString description, QString manufacturer);
+    void initFontsList();
     QSerialPort* serialPort;
     QByteArray jpegDataBuffer; //  JPEG
 
-    void proceses(); // with m_image
-    void proceses(cv::Mat& mat);
     void updateImage(QImage& img);
     QDateTime currentDateTime = QDateTime::currentDateTime();
 
@@ -105,7 +115,8 @@ private:
     unsigned int uvcTimeout;
 
     // Xe_QtCVUtils QtCVUtils;
-    QImage m_image;
+    // QImage m_image;
+    XeImage* xm_image;
     QString onnx = "D:/openCV/onnx_model/face_detection_yunet_2023mar.onnx";
     DetectProcess m_detect;
 

@@ -1,7 +1,9 @@
 #include "xe_qtcvutils.h"
 #include <QDebug>
 #include <QElapsedTimer>
+#include <QString>
 #include <freetype.hpp>
+#include <immintrin.h>
 using namespace std;
 using namespace cv;
 
@@ -13,6 +15,7 @@ std::vector<char> ASCII_LUT;
 QString asc_table_qstring = " .:-=+*#%@&MWXOB@";
 cv::Ptr<cv::freetype::FreeType2> ft2;
 string font_path = "D:/JetBrainsMono-Regular.ttf";
+static vector<int> IMAGEASCII_LUT(255);
 
 UtilsStatus qImgToMat(QByteArray& input, cv::Mat& output, int flags)
 {
@@ -139,6 +142,7 @@ UtilsStatus characterDraw(cv::Mat& src, char* dst)
         std::cerr << "CharacterDraw InvalidInput!";
         return InvalidInput;
     }
+    return Success;
 }
 
 UtilsStatus hist(cv::Mat& src, cv::Mat& dst)
@@ -234,10 +238,17 @@ UtilsStatus histogramStretching(cv::Mat& src, cv::Mat& dst, int threshold1, int 
 UtilsStatus initASCIITable()
 {
 
-    ASCII_LUT.clear();
+    if (!ASCII_LUT.empty())
+        return Success;
     for (auto c : asc_table_qstring.toStdString()) {
         ASCII_LUT.push_back(c);
     }
+    int index = 0;
+    for (int i = 0; i < 255; i++) {
+        index = round(((255 - i) / 255.0) * (ASCII_LUT.size() - 1));
+        IMAGEASCII_LUT[i] = ASCII_LUT[index];
+    }
+
     if (ft2.empty()) {
         ft2 = cv::freetype::createFreeType2();
         ft2->loadFontData(font_path, 0);
@@ -260,11 +271,16 @@ UtilsStatus asciiMat(cv::Mat& src, cv::Mat& dst, int thickness, cv::LineTypes)
     return Success;
 }
 
+// 把c∈[0,255]映射到[0,ASCII_LUT.size()-1]
 char asciiTable(int c)
 {
+    // 0~255 -> 17
     if (c > 255)
         c = 255;
-    return ASCII_LUT[static_cast<int>((c / 255.0) * ASCII_LUT.size())];
+
+    auto tmp = (int)((c / 255.0) * ASCII_LUT.size());
+    tmp = ASCII_LUT.size() - tmp - 1;
+    return ASCII_LUT[tmp];
 }
 std::vector<std::vector<char>> generateAsciiCharTable(const cv::Mat& src, int font_width, int font_height)
 {
@@ -274,7 +290,7 @@ std::vector<std::vector<char>> generateAsciiCharTable(const cv::Mat& src, int fo
     if (src.channels() == 3) {
         cv::cvtColor(src, gray, cv::COLOR_BGR2GRAY);
     } else {
-        gray = src.clone();
+        gray = src;
     }
 
     // 2. 创建积分图
@@ -306,18 +322,91 @@ std::vector<std::vector<char>> generateAsciiCharTable(const cv::Mat& src, int fo
 
             // 映射到字符集
 
-            asciiArt[i][j] = asciiTable(avg);
+            asciiArt[i][j] = IMAGEASCII_LUT[avg];
         }
     }
     return asciiArt;
 
-    for (auto line : asciiArt) {
-        for (auto c : line)
-            std::cout << c;
-        std::cout << std::endl;
-    }
+    //    for (auto line : asciiArt) {
+    //        for (auto c : line)
+    //            std::cout << c;
+    //         std::cout << std::endl;
+    //    }
 }
+QString generateAsciiQString(const cv::Mat& src, int font_width, int font_height)
+{
 
+    // 1. 转为灰度图
+    cv::Mat gray;
+    if (src.channels() == 3) {
+        cv::cvtColor(src, gray, cv::COLOR_BGR2GRAY);
+    } else {
+        gray = src;
+    }
+
+    // 2. 创建积分图
+    cv::Mat integralImg;
+    cv::integral(gray, integralImg, CV_32S);
+
+    // 3. 定义输出ASCII QString
+    int rows = gray.rows / font_height;
+    int cols = gray.cols / font_width;
+    unsigned int _size = rows * cols + rows;
+    QString AsciiQString;
+    AsciiQString.resize(_size);
+
+    // 4. 遍历计算每个块的均值
+    int index = 0;
+    for (int i = 0; i < rows; ++i) {
+        for (int j = 0; j < cols; ++j) {
+            int x1 = j * font_width;
+            int y1 = i * font_height;
+            int x2 = x1 + font_width;
+            int y2 = y1 + font_height;
+
+            // 从积分图中获取区域和
+            int sum = integralImg.at<int>(y2, x2)
+                - integralImg.at<int>(y1, x2)
+                - integralImg.at<int>(y2, x1)
+                + integralImg.at<int>(y1, x1);
+
+            // 计算均值
+            int avg = sum / (font_width * font_height);
+
+            // 映射到字符集
+            char tmp = IMAGEASCII_LUT[avg];
+            AsciiQString[index++] = tmp;
+        }
+        AsciiQString[index++] = '\n'; // 换行
+    }
+    return AsciiQString;
+
+    //    for (auto line : asciiArt) {
+    //        for (auto c : line)
+    //            std::cout << c;
+    //         std::cout << std::endl;
+    //    }
+}
+QString vectorToQString(const std::vector<std::vector<QChar>>& data)
+{
+    QString result;
+
+    // 预分配内存以减少重新分配的次数
+    size_t totalSize = 0;
+    for (const auto& row : data) {
+        totalSize += row.size() + 1; // +1 用于换行符
+    }
+    result.reserve(totalSize);
+
+    // 遍历每一行并追加到 QString
+    for (const auto& row : data) {
+
+        result.append(row.data(), row.size());
+        result.append('\n');
+    }
+
+    return result;
+}
 /*
  * ft2->putText 非常慢，当绘制2000*1000 with 16*10字体的时候，即200*60+个字符
  * 需要800毫秒
