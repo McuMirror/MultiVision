@@ -77,7 +77,6 @@ int DetectProcess::visualize(cv::Mat& input, cv::Mat& faces, int thickness)
         std::string text = cv::format("%.2f", faces.at<float>(i, 14));
         cv::putText(input, text, cv::Point((faces.at<float>(i, 0)), int(faces.at<float>(i, 1))), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 255, 255), thickness);
         // cv::PolyLine
-
     }
     return 0;
 }

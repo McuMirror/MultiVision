@@ -4,18 +4,18 @@
 #include <QString>
 #include <freetype.hpp>
 #include <immintrin.h>
-using namespace std;
+
 using namespace cv;
 
 #define FONT_WIDTH 10
 #define FONT_HIGH 16
-using namespace std;
+
 namespace Xe_QtCVUtils {
 std::vector<char> ASCII_LUT;
 QString asc_table_qstring = " .:-=+*#%@&MWXOB@";
 cv::Ptr<cv::freetype::FreeType2> ft2;
-string font_path = "D:/JetBrainsMono-Regular.ttf";
-static vector<int> IMAGEASCII_LUT(255);
+std::string font_path = "D:/JetBrainsMono-Regular.ttf";
+static std::vector<int> IMAGEASCII_LUT(255);
 
 UtilsStatus qImgToMat(QByteArray& input, cv::Mat& output, int flags)
 {
@@ -255,18 +255,18 @@ UtilsStatus initASCIITable()
     }
     return Success;
 }
-UtilsStatus asciiMat(cv::Mat& src, cv::Mat& dst, int thickness, cv::LineTypes)
+UtilsStatus asciiMat(cv::Mat& src, cv::Mat& dst, int fontWidth, int fontheigh, int thickness, cv::LineTypes)
 {
 
     // 如果没有初始化，初始化look up映射表
     if (ASCII_LUT.size() == 0)
         initASCIITable();
 
-    auto&& ret = generateAsciiCharTable(src, FONT_WIDTH, FONT_HIGH);
+    auto&& ret = generateAsciiCharTable(src, fontWidth, fontheigh);
 
-    vector<vector<char>> AscTable = std::move(ret);
+    std::vector<std::vector<char>> AscTable = std::move(ret);
 
-    drawTextWithAsciiTable(ft2, AscTable, dst, cv::Point(0, 0), FONT_WIDTH, FONT_HIGH);
+    drawTextWithAsciiTable(ft2, AscTable, dst, cv::Point(0, 0), fontWidth, fontheigh);
 
     return Success;
 }
@@ -294,6 +294,7 @@ std::vector<std::vector<char>> generateAsciiCharTable(const cv::Mat& src, int fo
     }
 
     // 2. 创建积分图
+
     cv::Mat integralImg;
     cv::integral(gray, integralImg, CV_32S);
 
@@ -301,7 +302,7 @@ std::vector<std::vector<char>> generateAsciiCharTable(const cv::Mat& src, int fo
     int rows = gray.rows / font_height;
     int cols = gray.cols / font_width;
 
-    vector<vector<char>> asciiArt(rows, vector<char>(cols));
+    std::vector<std::vector<char>> asciiArt(rows, std::vector<char>(cols));
 
     // 4. 遍历计算每个块的均值
     for (int i = 0; i < rows; ++i) {
@@ -346,8 +347,10 @@ QString generateAsciiQString(const cv::Mat& src, int font_width, int font_height
 
     // 2. 创建积分图
     cv::Mat integralImg;
+    QElapsedTimer intergralTime;
+    intergralTime.start();
     cv::integral(gray, integralImg, CV_32S);
-
+    // qDebug() << "积分图耗时：" << intergralTime.elapsed();
     // 3. 定义输出ASCII QString
     int rows = gray.rows / font_height;
     int cols = gray.cols / font_width;
@@ -412,7 +415,7 @@ QString vectorToQString(const std::vector<std::vector<QChar>>& data)
  * 需要800毫秒
  * 建议主要作为文本输出而不是渲染到图像上
  */
-void drawTextWithAsciiTable(cv::Ptr<cv::freetype::FreeType2> ft2, const vector<vector<char>>& Text, cv::Mat& dst, cv::Point position, int font_width, int font_high, const cv::Scalar& color, int thickness, int line_type)
+void drawTextWithAsciiTable(cv::Ptr<cv::freetype::FreeType2> ft2, const std::vector<std::vector<char>>& Text, cv::Mat& dst, cv::Point position, int font_width, int font_high, const cv::Scalar& color, int thickness, int line_type)
 {
 
     cv::Point pos = position;
@@ -421,8 +424,8 @@ void drawTextWithAsciiTable(cv::Ptr<cv::freetype::FreeType2> ft2, const vector<v
     QElapsedTimer timer;
     timer.start();
 
-    for (const vector<char>& lineText : Text) {
-        string lineString;
+    for (const std::vector<char>& lineText : Text) {
+        std::string lineString;
         pos.y += font_high;
         for (const char& ch : lineText) {
             lineString.push_back(ch);
@@ -432,12 +435,12 @@ void drawTextWithAsciiTable(cv::Ptr<cv::freetype::FreeType2> ft2, const vector<v
     qDebug() << "Elapsed time:" << timer.elapsed() << "ms";
 }
 
-void drawTextWithAsciiTable(cv::Ptr<cv::freetype::FreeType2> ft2, const vector<string>& Text, cv::Mat& dst, cv::Point position, int font_width, int font_high, const cv::Scalar& color, int thickness, int line_type)
+void drawTextWithAsciiTable(cv::Ptr<cv::freetype::FreeType2> ft2, const std::vector<std::string>& Text, cv::Mat& dst, cv::Point position, int font_width, int font_high, const cv::Scalar& color, int thickness, int line_type)
 {
     cv::Point pos = position;
-    for (const string& lineText : Text) {
+    for (const std::string& lineText : Text) {
         for (const char& ch : lineText) {
-            ft2->putText(dst, string(1, ch), pos, font_high, color, thickness, line_type, true);
+            ft2->putText(dst, std::string(1, ch), pos, font_high, color, thickness, line_type, true);
             pos.x += font_width; // 更新 X 坐标，增加固定偏移
         }
         pos.x = position.x;

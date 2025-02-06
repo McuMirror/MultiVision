@@ -1,12 +1,12 @@
 #include "usb_receiver.h"
-#include "ft2build.h"
+// #include "ft2build.h"
 #include "ui_usb_receiver.h"
 #include "xe_qtcvutils.h"
 
 #include <QMessageBox>
 #include <QRandomGenerator>
 #include <freetype.hpp>
-#include FT_FREETYPE_H
+// #include FT_FREETYPE_H
 #include <QElapsedTimer>
 #include <opencv.hpp>
 #include <opencv2/dnn.hpp>
@@ -45,6 +45,9 @@ USB_Receiver::USB_Receiver(QWidget* parent)
     initFontsList();
 
     qDebug() << ui->asciiTextBrowser->font().pointSize();
+
+    cv::setUseOptimized(false); // OPENCV禁用优化,否则 BGR->YUV转不了，不知道为什么
+
 #define TEST_BLOCK 0
 #if TEST_BLOCK
 
@@ -210,6 +213,23 @@ void USB_Receiver::processes()
 
 void USB_Receiver::processes(cv::Mat& mat)
 {
+    static int width;
+    static int height;
+
+    int _W = mat.size().width; // 768
+    int _H = mat.size().height; // 576
+    int _DIMS = mat.dims; // 2
+    auto _TYPE = mat.type(); // 16
+
+    cv::Mat yuvMat;
+    cv::cvtColor(mat, yuvMat, cv::COLOR_BGR2YUV_I420); // 不关闭优化的话会出错
+
+    if (mat.size().width != width || height != mat.size().height) {
+        ui->openGLWidget->init_texture(mat.size().width, mat.size().height);
+        qDebug() << "init_texture finished ~";
+    }
+    width = mat.size().width;
+    height = mat.size().height;
     // ----begin with mat----
 
     if (ui->blurButton->isChecked()) {
@@ -310,7 +330,8 @@ void USB_Receiver::processes(cv::Mat& mat)
         m_detect.visualize(mat, face, 2);
     }
 
-    // ----end with mat----
+    ui->openGLWidget->paintMat(&mat);
+    //  ----end with mat----
 
     QImage disp;
     int ret = Xe_QtCVUtils::matToQImg(mat, disp); // Mat ..->..QImage
@@ -373,14 +394,14 @@ void USB_Receiver::dragLeaveEvent(QDragLeaveEvent* event)
  */
 void USB_Receiver::onPortReadyRead()
 {
-    QImage ss;
 
     QByteArray data = serialPort->readAll();
-    int byte_len = data.size();
+
     // ui->plainTextEdit->appendPlainText(QString::number(data.size()));
 
     if (data.contains(QByteArray::fromHex("FFD8FF"))) {
         // 如果发现开始标志，清空缓存并加入新数据
+        jpegFrameTime.start();
         jpegDataBuffer.clear();
         jpegDataBuffer.append(data);
         statusBar()->showMessage("find \" FFD8FF \"");
@@ -394,8 +415,12 @@ void USB_Receiver::onPortReadyRead()
         // 只保留结束标志之前的数据
         QByteArray completeData = jpegDataBuffer + data.left(endPos + 2);
         statusBar()->showMessage("find \" FFD9 \"");
+
         // 调用渲染函数显示完整 JPEG 数据
         if (completeData.size() > 1000) {
+            // qDebug() << "time:" << jpegFrameTime.elapsed();
+            // qDebug() << "size:" << completeData.size();
+            // qDebug() << "speed:" << 1000 * (completeData.size() / 1024) / (jpegFrameTime.elapsed());
             bytesSum += completeData.size();
 #ifdef WRITE_IMG
 
@@ -693,4 +718,13 @@ void USB_Receiver::on_font_w_valueChanged(int arg1)
 void USB_Receiver::on_font_h_valueChanged(int arg1)
 {
     processes();
+}
+
+void USB_Receiver::on_pushButton_clicked()
+{
+    static int displayStackedMaxIndex = ui->displayStacked->count();
+
+    int i = ui->displayStacked->currentIndex();
+    qDebug() << "max index is :" << displayStackedMaxIndex << " , now index is : " << i;
+    ui->displayStacked->setCurrentIndex((++i) % displayStackedMaxIndex);
 }

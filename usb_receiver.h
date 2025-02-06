@@ -4,6 +4,7 @@
 #include "xe_qtcvutils.h"
 #include "xeimage.h"
 #include <QDateTime>
+#include <QElapsedTimer>
 #include <QList>
 #include <QMainWindow>
 #include <QScrollBar>
@@ -96,6 +97,8 @@ private slots:
 
     void on_font_h_valueChanged(int arg1);
 
+    void on_pushButton_clicked();
+
 private:
     Ui::USB_Receiver* ui;
     void updatePortList(); // 更新com口列表
@@ -109,6 +112,7 @@ private:
 
     QTimer* tickTimer;
     QTimer* uvcTimer;
+    QElapsedTimer jpegFrameTime;
     std::list<uint32_t> bytesList;
     unsigned long bytesSum;
     unsigned int tickTimeout;

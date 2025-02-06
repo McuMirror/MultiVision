@@ -1,8 +1,13 @@
 QT       += core gui serialport
+QT       += opengl
+QT       += openglwidgets
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
 QMAKE_CXXFLAGS_WARN_ON += -Wno-unused-parameter
+
+# QMAKE_CXXFLAGS_DEBUG += -gstabs+
+
 CONFIG += c++17
 
 # You can make your code fail to compile if it uses deprecated APIs.
@@ -24,6 +29,7 @@ LIBS += D:\openCV\build-freetype-2.13.3-Desktop_Qt_6_5_3_MinGW_64_bit-Debug\inst
 
 SOURCES += \
     detectprocess.cpp \
+    glwidget.cpp \
     main.cpp \
     usb_receiver.cpp \
     xe_qtcvutils.cpp \
@@ -31,6 +37,7 @@ SOURCES += \
 
 HEADERS += \
     detectprocess.h \
+    glwidget.h \
     imagewidget.h \
     usb_receiver.h \
     xe_qtcvutils.h \
@@ -49,4 +56,4 @@ DISTFILES += \
     opencv_help.md
 
 RESOURCES += \
-    icon.qrc
+    res.qrc
