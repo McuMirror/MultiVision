@@ -10,7 +10,10 @@
 #include <QWidget>
 #include <mutex>
 #include <opencv.hpp>
-
+/*
+ *使用方式：初始化或当图像尺寸更改的时候调用 init_texture
+ *        调用 paintMat 以cv::Mat 图像绘制
+ */
 class GLWidget : public QOpenGLWidget, protected QOpenGLFunctions {
     Q_OBJECT
 public:
@@ -33,7 +36,7 @@ private:
     GLuint m_framebuffer;
     // GLuint m_shaderProgram;
     QOpenGLShaderProgram m_Program; // shader程序
-private:
+
     QOpenGLShaderProgram program; // shader程序
     GLuint unis[3] = { 0 }; // shader中yuv变量地址
     GLuint texs[3] = { 0 }; // openg的 texture地址
