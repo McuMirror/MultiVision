@@ -451,7 +451,7 @@ color: white; background-color: rgba(119, 25, 170,220);
        <item>
         <widget class="QStackedWidget" name="displayStacked">
          <property name="currentIndex">
-          <number>1</number>
+          <number>2</number>
          </property>
          <widget class="QWidget" name="page">
           <layout class="QGridLayout" name="gridLayout_2">
@@ -504,7 +504,7 @@ color: white; background-color: rgba(119, 25, 170,220);
            </item>
           </layout>
          </widget>
-         <widget class="QWidget" name="page_2">
+         <widget class="QWidget" name="page_2_asciiText">
           <layout class="QGridLayout" name="gridLayout_3">
            <property name="leftMargin">
             <number>0</number>
@@ -529,7 +529,8 @@ color: white; background-color: rgba(119, 25, 170,220);
 color: rgb(255, 255, 255);</string>
              </property>
              <property name="plainText">
-              <string>aaa</string>
+              <string>
+</string>
              </property>
             </widget>
            </item>

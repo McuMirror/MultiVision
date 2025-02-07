@@ -256,7 +256,7 @@ void USB_Receiver::processes(cv::Mat& mat)
             ui->bilateralDScrollBar->value(),
             ui->bilateralSCScrollBar->value(),
             ui->bilateralSSScrollBar->value());
-        qDebug() << "bilateralFilter success!";
+        // qDebug() << "bilateralFilter success!";
     }
     if (ui->sobelButton->isChecked()) {
         cv::Mat tmp = std::move(mat);
@@ -687,7 +687,7 @@ void USB_Receiver::on_asciiArtButton_clicked()
     if (ui->asciiArtButton->isChecked()) {
 
         Xe_QtCVUtils::initASCIITable();
-        ui->displayStacked->setCurrentIndex(1);
+        ui->displayStacked->setCurrentIndex(2);
     } else {
         ui->displayStacked->setCurrentIndex(0);
     }
@@ -725,6 +725,6 @@ void USB_Receiver::on_pushButton_clicked()
     static int displayStackedMaxIndex = ui->displayStacked->count();
 
     int i = ui->displayStacked->currentIndex();
-    qDebug() << "max index is :" << displayStackedMaxIndex << " , now index is : " << i;
+    // qDebug() << "max index is :" << displayStackedMaxIndex << " , now index is : " << i;
     ui->displayStacked->setCurrentIndex((++i) % displayStackedMaxIndex);
 }

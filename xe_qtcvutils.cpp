@@ -12,7 +12,7 @@ using namespace cv;
 
 namespace Xe_QtCVUtils {
 std::vector<char> ASCII_LUT;
-QString asc_table_qstring = " .:-=+*#%@&MWXOB@";
+QString asc_table_qstring = " .:-=+*#%@"; //.:-=+*OX#%@&M
 cv::Ptr<cv::freetype::FreeType2> ft2;
 std::string font_path = "D:/JetBrainsMono-Regular.ttf";
 static std::vector<int> IMAGEASCII_LUT(255);
