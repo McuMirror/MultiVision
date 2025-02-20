@@ -7,10 +7,14 @@ GLWidget::GLWidget(QWidget* parent)
     , QOpenGLFunctions()
 {
 }
-
+/*
+ * opengl窗口初始化和texture初始化分开
+ * 窗口初始化在第一次运行时调用一次
+ * texture初始化在图像尺寸改变时调用
+ */
 int GLWidget::init_texture(int width, int height)
 {
-    qDebug() << "VideoOpenGLWidget::init....";
+    qDebug() << "VideoOpenGLWidget::init_texture....";
     std::unique_lock<std::mutex> guard(m_mutex);
     this->width = width;
     this->height = height;
@@ -60,7 +64,7 @@ int GLWidget::init_texture(int width, int height)
     const char* version = (const char*)glGetString(GL_VERSION);
     qDebug() << "OpenGL Version: " << version;
 
-    qDebug() << "VideoOpenGLWidget::init finished.";
+    qDebug() << "VideoOpenGLWidget::init_texture finished.";
 
     return 0;
 }
@@ -124,6 +128,7 @@ void GLWidget::initializeGL()
     projection.ortho(-1.0f, 1.0f, -1.0f, 1.0f, -1.0f, 1.0f);
     program.setUniformValue("projection", projection);
 
+    isInit = true;
     qDebug() << "initializeGL finished";
 }
 
@@ -197,4 +202,56 @@ void GLWidget::paintMat(cv::Mat* mat) // 原来是AVFrame* frame
         imageHeight = mat->size().height;
         update();
     }
+}
+
+void GLWidget::paintFrame(AVFrame* frame)
+{
+    // m_render();
+    //  qDebug() << "paintFrame ....";
+    if (!frame) {
+        qDebug() << "no frame";
+        return;
+    }
+
+    std::unique_lock<std::mutex> guard(m_mutex);
+    // 容错，保证尺寸正确
+    if (frame->format == AV_PIX_FMT_YUV420P) {
+        // 是 YUV 420 格式
+        if (width == frame->linesize[0]) // 无需对齐
+        {
+            memcpy(datas[0], frame->data[0], width * height);
+            memcpy(datas[1], frame->data[1], width * height / 4);
+            memcpy(datas[2], frame->data[2], width * height / 4);
+        } else // 行对齐问题
+        {
+            for (int i = 0; i < height; i++) // Y
+                memcpy(datas[0] + width * i, frame->data[0] + frame->linesize[0] * i, width);
+            for (int i = 0; i < height / 2; i++) // U
+                memcpy(datas[1] + width / 2 * i, frame->data[1] + frame->linesize[1] * i, width);
+            for (int i = 0; i < height / 2; i++) // V
+                memcpy(datas[2] + width / 2 * i, frame->data[2] + frame->linesize[2] * i, width);
+        }
+
+        // qDebug() << "paintFrame finished";
+    }
+
+    else if (frame->format == AV_PIX_FMT_YUV422P) {
+        // 是 YUV 420 格式
+        if (width == frame->linesize[0]) // 无需对齐
+        {
+            memcpy(datas[0], frame->data[0], width * height);
+            memcpy(datas[1], frame->data[1], width * height / 2);
+            memcpy(datas[2], frame->data[2], width * height / 2);
+        } else // 行对齐问题
+        {
+            for (int i = 0; i < height; i++) // Y
+                memcpy(datas[0] + width * i, frame->data[0] + frame->linesize[0] * i, width);
+            for (int i = 0; i < height; i++) // U
+                memcpy(datas[1] + (width / 2) * i, frame->data[1] + frame->linesize[1] * i, width / 2);
+            for (int i = 0; i < height; i++) // V
+                memcpy(datas[2] + (width / 2) * i, frame->data[2] + frame->linesize[2] * i, width / 2);
+        }
+    }
+    av_frame_free(&frame);
+    update();
 }

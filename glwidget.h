@@ -10,6 +10,11 @@
 #include <QWidget>
 #include <mutex>
 #include <opencv.hpp>
+
+extern "C" {
+#include "libavcodec/avcodec.h"
+}
+
 /*
  *使用方式：初始化或当图像尺寸更改的时候调用 init_texture
  *        调用 paintMat 以cv::Mat 图像绘制
@@ -19,6 +24,8 @@ class GLWidget : public QOpenGLWidget, protected QOpenGLFunctions {
 public:
     GLWidget(QWidget* parent = nullptr);
     int init_texture(int w, int h);
+
+    bool isInit = false;
 
 protected:
     virtual void initializeGL() override;
@@ -50,7 +57,7 @@ private:
 
 public slots:
     void paintMat(cv::Mat* mat);
-    //  void paintFrame(AVFrame* frame);
+    void paintFrame(AVFrame* frame);
 };
 
 #endif // GLWIDGET_H

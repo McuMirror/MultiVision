@@ -35,6 +35,9 @@ USB_Receiver::USB_Receiver(QWidget* parent)
 
     connect(xm_image, &XeImage::imageUpdated, this, qOverload<>(&USB_Receiver::processes));
 
+    connect(&m_player, &Player::playerInitReady, this, [&](int w, int h) { ui->openGLWidget->init_texture(w, h); });
+    connect(&m_player, &Player::getReadyFrame, this, [&](AVFrame* frame) { ui->openGLWidget->paintFrame(frame); });
+
     tickTimeout = 500;
     tickTimer->start(tickTimeout);
     uvcTimeout = 30;
@@ -50,6 +53,12 @@ USB_Receiver::USB_Receiver(QWidget* parent)
 
 #define TEST_BLOCK 0
 #if TEST_BLOCK
+// 在Qt项目中添加以下代码验证
+#include <opencv2/core/utility.hpp>
+
+    qDebug() << "cv::getBuildInformation()  START -----------------------------------";
+    qDebug() << cv::getBuildInformation().c_str();
+    qDebug() << "cv::getBuildInformation()  END -----------------------------------";
 
     QWidget::setAcceptDrops(true);
 
@@ -191,9 +200,9 @@ void USB_Receiver::initFontsList()
             QString fontPath = dir.filePath(fontFile);
             int fontId = QFontDatabase::addApplicationFont(fontPath);
             if (fontId == -1) {
-                qWarning() << "Failed to load font:" << fontPath;
+                // qWarning() << "Failed to load font:" << fontPath;
             } else {
-                qDebug() << "Loaded font:" << fontPath;
+                // qDebug() << "Loaded font:" << fontPath;
             }
         }
     }
@@ -213,8 +222,6 @@ void USB_Receiver::processes()
 
 void USB_Receiver::processes(cv::Mat& mat)
 {
-    static int width;
-    static int height;
 
     int _W = mat.size().width; // 768
     int _H = mat.size().height; // 576
@@ -224,12 +231,6 @@ void USB_Receiver::processes(cv::Mat& mat)
     cv::Mat yuvMat;
     cv::cvtColor(mat, yuvMat, cv::COLOR_BGR2YUV_I420); // 不关闭优化的话会出错
 
-    if (mat.size().width != width || height != mat.size().height) {
-        ui->openGLWidget->init_texture(mat.size().width, mat.size().height);
-        qDebug() << "init_texture finished ~";
-    }
-    width = mat.size().width;
-    height = mat.size().height;
     // ----begin with mat----
 
     if (ui->blurButton->isChecked()) {
@@ -330,8 +331,23 @@ void USB_Receiver::processes(cv::Mat& mat)
         m_detect.visualize(mat, face, 2);
     }
 
-    ui->openGLWidget->paintMat(&mat);
     //  ----end with mat----
+
+    // **************OPENGL START*************************************
+    static int gl_width;
+    static int gl_height;
+
+    if (ui->openGLWidget->isInit) {
+        if (mat.size().width != gl_width || gl_height != mat.size().height) {
+            ui->openGLWidget->init_texture(mat.size().width, mat.size().height);
+            qDebug() << "init_texture finished ~";
+        }
+        gl_width = mat.size().width;
+        gl_height = mat.size().height;
+
+        ui->openGLWidget->paintMat(&mat);
+    }
+    // ***************OPENGL END**************************************
 
     QImage disp;
     int ret = Xe_QtCVUtils::matToQImg(mat, disp); // Mat ..->..QImage
@@ -727,4 +743,81 @@ void USB_Receiver::on_pushButton_clicked()
     int i = ui->displayStacked->currentIndex();
     // qDebug() << "max index is :" << displayStackedMaxIndex << " , now index is : " << i;
     ui->displayStacked->setCurrentIndex((++i) % displayStackedMaxIndex);
+}
+
+void USB_Receiver::on_pushButton_4_clicked()
+{
+    ui->stackedWidget->setCurrentIndex(2);
+    QString result;
+
+    QImage convertedImage = *xm_image;
+    if (convertedImage.format() != QImage::Format_ARGB32)
+        convertedImage = convertedImage.convertToFormat(QImage::Format_ARGB32);
+
+    const uchar* data = convertedImage.constBits();
+    int width = convertedImage.width();
+    int height = convertedImage.height();
+    int bytesPerLine = convertedImage.bytesPerLine(); // 每一行的字节数
+
+    for (int y = 0; y < height; ++y) {
+        const QRgb* line = reinterpret_cast<const QRgb*>(data + y * bytesPerLine);
+        for (int x = 0; x < width; ++x) {
+            QRgb pixel = line[x];
+            // 提取RGB分量
+            int r = qRed(pixel); // 8-bit (0-255)
+            int g = qGreen(pixel); // 8-bit
+            int b = qBlue(pixel); // 8-bit
+
+            // 转换为RGB565（5+6+5）
+            uint16_t rgb565 = ((r & 0xF8) << 8) | ((g & 0xFC) << 3) | (b >> 3);
+
+            if (!result.isEmpty()) {
+                result += ", ";
+            }
+
+            result += QString("0x%1").arg(rgb565, 4, 16, QChar('0')).toUpper();
+        }
+        result += "\n";
+    }
+
+    ui->asciiTextBrowser->setPlainText(result);
+}
+
+void USB_Receiver::on_openImageButton_clicked()
+{
+
+    QFileDialog tempDialog;
+    QString imgPath = tempDialog.getOpenFileName(NULL, "选择图像",
+        "",
+        tr("Images(*.png *.jpg *.jpeg *.bmp)"));
+
+    if (imgPath.isEmpty())
+        return;
+
+    QImage&& img = QImage(imgPath);
+
+    updateImage(img);
+}
+
+void USB_Receiver::on_openVideoButton_clicked()
+{
+    QFileDialog tempDialog;
+    QString videoPath = tempDialog.getOpenFileName(NULL, "选择视频",
+        "",
+        tr("Video(*.mp4 *.mkv )"));
+
+    if (videoPath.isEmpty())
+        return;
+
+    m_player.initialization(videoPath);
+}
+
+void USB_Receiver::on_playButton_clicked()
+{
+    m_player.play();
+}
+
+void USB_Receiver::on_pauseButton_clicked()
+{
+    m_player.pause();
 }

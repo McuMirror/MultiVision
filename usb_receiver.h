@@ -1,6 +1,7 @@
 #ifndef USB_RECEIVER_H
 #define USB_RECEIVER_H
 #include "detectprocess.h"
+#include "player/player.h"
 #include "xe_qtcvutils.h"
 #include "xeimage.h"
 #include <QDateTime>
@@ -99,6 +100,16 @@ private slots:
 
     void on_pushButton_clicked();
 
+    void on_pushButton_4_clicked();
+
+    void on_openImageButton_clicked();
+
+    void on_openVideoButton_clicked();
+
+    void on_playButton_clicked();
+
+    void on_pauseButton_clicked();
+
 private:
     Ui::USB_Receiver* ui;
     void updatePortList(); // 更新com口列表
@@ -123,7 +134,7 @@ private:
     XeImage* xm_image;
     QString onnx = "D:/openCV/onnx_model/face_detection_yunet_2023mar.onnx";
     DetectProcess m_detect;
-
+    Player m_player;
     cv::VideoCapture uvcCap; // uvc class
 
 protected:
