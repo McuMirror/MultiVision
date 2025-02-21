@@ -31,4 +31,5 @@ QT+OPENCV处理UVC/串口/本地图像，执行滤波、人脸识别等
 - OPENGL硬件渲染
 - 文本(字符画输出)  
 
+![image](https://github.com/minasanohayo/MultiVision/blob/main/BAD_APPLE_2025.gif "preview")
   
