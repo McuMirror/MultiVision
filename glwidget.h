@@ -25,7 +25,16 @@ public:
     GLWidget(QWidget* parent = nullptr);
     int init_texture(int w, int h);
 
-    bool isInit = false;
+    int checkInitState()
+    {
+        if (!GLisInit)
+            return 1;
+        if (!textIsInit)
+            return 2;
+        if (!projectionIsInit)
+            return 3;
+        return 0;
+    }
 
 protected:
     virtual void initializeGL() override;
@@ -54,10 +63,13 @@ private:
     int height = 128;
 
     float imageWidth, imageHeight;
-
+    void setProjection(int w, int h);
+    bool GLisInit = false;
+    bool textIsInit = false;
+    bool projectionIsInit = false;
 public slots:
     void paintMat(cv::Mat* mat);
-    void paintFrame(AVFrame* frame);
+    void paintFrame(std::shared_ptr<AVFrame>);
 };
 
 #endif // GLWIDGET_H

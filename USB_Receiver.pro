@@ -75,6 +75,7 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
 
 DISTFILES += \
+    README.md \
     opencv_help.md \
     player/10_minutes.mp4 \
     player/billie_jean.mp4

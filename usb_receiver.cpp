@@ -36,7 +36,19 @@ USB_Receiver::USB_Receiver(QWidget* parent)
     connect(xm_image, &XeImage::imageUpdated, this, qOverload<>(&USB_Receiver::processes));
 
     connect(&m_player, &Player::playerInitReady, this, [&](int w, int h) { ui->openGLWidget->init_texture(w, h); });
-    connect(&m_player, &Player::getReadyFrame, this, [&](AVFrame* frame) { ui->openGLWidget->paintFrame(frame); });
+
+    // 如果是frame_yuv -> glwidget(显示)
+    // 如果是frame_rgb -> processes(cv::mat) -> glwidet(显示)
+    connect(&m_player, &Player::getReadyFrame, this, [&](std::shared_ptr<AVFrame> frame) {
+        if (frame->format == AVPixelFormat::AV_PIX_FMT_YUV420P || frame->format == AVPixelFormat::AV_PIX_FMT_YUV422P)
+            ui->openGLWidget->paintFrame(frame);
+        else if (frame->format == AVPixelFormat::AV_PIX_FMT_RGB24) {
+            cv::Mat mat(frame->height, frame->width, CV_8UC3,
+                frame->data[0], frame->linesize[0]);
+            cv::Mat result = mat.clone(); // 深拷贝避免内存问题（重要！）
+            processes(result);
+        };
+    });
 
     tickTimeout = 500;
     tickTimer->start(tickTimeout);
@@ -110,6 +122,7 @@ USB_Receiver::USB_Receiver(QWidget* parent)
 }
 USB_Receiver::~USB_Receiver()
 {
+
     delete ui;
 }
 
@@ -138,9 +151,9 @@ void USB_Receiver::updatePortList()
         ui->portComboBox->addItem(portInfo.portName());
         if (currentPort == portInfo.portName())
             flag = true;
-        qDebug() << "Port:" << portInfo.portName() << "\n"
-                 << "Description:" << portInfo.description() << "\n"
-                 << "Manufacturer:" << portInfo.manufacturer() << "\n";
+        qDebug() << "Port:" << portInfo.portName(); //<< "\n"
+        //                 << "Description:" << portInfo.description() << "\n"
+        //                 << "Manufacturer:" << portInfo.manufacturer() << "\n";
     }
     if (flag)
         ui->portComboBox->setCurrentText(currentPort);
@@ -337,8 +350,9 @@ void USB_Receiver::processes(cv::Mat& mat)
     static int gl_width;
     static int gl_height;
 
-    if (ui->openGLWidget->isInit) {
-        if (mat.size().width != gl_width || gl_height != mat.size().height) {
+    if (ui->openGLWidget->checkInitState() != 1) {
+        // 如果材质未初始化/长宽与材质长宽不一样 ， 则重新建立材质
+        if (ui->openGLWidget->checkInitState() == 2 || mat.size().width != gl_width || gl_height != mat.size().height) {
             ui->openGLWidget->init_texture(mat.size().width, mat.size().height);
             qDebug() << "init_texture finished ~";
         }
@@ -346,6 +360,8 @@ void USB_Receiver::processes(cv::Mat& mat)
         gl_height = mat.size().height;
 
         ui->openGLWidget->paintMat(&mat);
+    } else {
+        qDebug() << "ui->openGLWidget->isInit NO!";
     }
     // ***************OPENGL END**************************************
 

@@ -48,6 +48,7 @@ private:
     AVFormatContext* ifmt_ctx_;
     std::atomic<bool> pause_ = true;
     std::mutex m_mutex;
+    AVFrame* frame = nullptr;
     AVFrame* RGBFrameFromYUV(AVFrame*);
     int AFrameToSwr(AVFrame* avFrame);
     int waitForReachPtsTime(AVFrame* frame);
@@ -65,7 +66,7 @@ private:
 public slots:
     void on_seek_frame(int ms);
 signals:
-    void getReadyFrame(AVFrame* frame);
+    void getReadyFrame(std::shared_ptr<AVFrame>);
     void getReadyFrameTime(int);
 };
 

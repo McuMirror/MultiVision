@@ -22,6 +22,8 @@ class Player : public QObject {
 public:
     Player(QWidget* parent = nullptr);
     ~Player();
+
+private:
     // void InitOpenglTexture();
     AVPacketQueue audio_packet_queue;
     AVPacketQueue video_packet_queue;
@@ -38,16 +40,13 @@ public:
     DecodeThread* audio_decode_thread = nullptr;
 
     QAudioPlayer* audio_ouput = nullptr;
-
-    unsigned int pause_time = -1;
-
     bool IsInit = false;
-
 signals:
-    void getReadyFrame(AVFrame* frame);
+    void getReadyFrame(std::shared_ptr<AVFrame> frame);
     void playerInitReady(int w, int h);
 
 public:
+    unsigned int pause_time = -1;
     int initialization(QString videoPath);
     void play();
     void pause();
@@ -59,7 +58,7 @@ private slots:
     //    void on_pushOpen_clicked();
 
 private:
-    QString video
-        = "D:\\Qt\\ffmpeg_sdl_player_v2\\ffmpeg_sdl_player\\10_minu11tes.mp4";
+    QString video // "D:/Qt/ffmpeg_sdl_player_v2/ffmpeg_sdl_player/billie_jean.mp4" "G:/BILIBILI/BAD_APPLE.MP4"
+        = "D:/Qt/ffmpeg_sdl_player_v2/ffmpeg_sdl_player/billie_jean.mp4";
 };
 #endif // PLAYER_H

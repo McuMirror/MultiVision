@@ -24,8 +24,8 @@ int DemuxThread::Init(const char* url, AVStream** audio_stream, AVStream** video
     url_ = url;
 
     ifmt_ctx_ = avformat_alloc_context(); // 关键, 开辟分配一个内存结构，
-    qDebug() << "sizeof ifmt_ctx_ = " << sizeof(AVFormatContext);
-    qDebug() << "sizeof AVStream  = " << sizeof(AVStream);
+    // qDebug() << "sizeof ifmt_ctx_ = " << sizeof(AVFormatContext);
+    // qDebug() << "sizeof AVStream  = " << sizeof(AVStream);
     ret = avformat_open_input(&ifmt_ctx_, url_.c_str(), nullptr, nullptr);
     av_strerror(ret, err2str, sizeof(err2str));
 
@@ -84,6 +84,7 @@ void DemuxThread::Run()
             video_queue_->MarkEOF();
             // av_strerror();
             abort_ = 1;
+            qDebug() << "MarkEOF,解包即结束...";
             break;
         }
         if (pkt.stream_index == audio_index_) {

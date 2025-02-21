@@ -1,6 +1,11 @@
 #include "decodethread.h"
 #include "qdebug.h"
 #include <thread>
+
+static void AVFrameDeleter(AVFrame* frame)
+{
+    av_frame_free(&frame); // 正确释放FFmpeg帧内存
+}
 DecodeThread::DecodeThread(AVPacketQueue* packet_queue, AVStream* av_stream, AVFormatContext* ifmt_ctx, QObject* parent)
     : packet_queue_(packet_queue)
     , av_stream_(av_stream)
@@ -89,7 +94,9 @@ void DecodeThread::Run()
         }
         while (true) { // 可能有多帧
             int frame_time = 0;
-            AVFrame* frame = av_frame_alloc();
+            if (frame)
+                av_frame_free(&frame);
+            frame = av_frame_alloc();
             ret = avcodec_receive_frame(codec_ctx_, frame); // codec_ctx_ -》 frame
 
             if (ret == 0) { //
@@ -106,19 +113,22 @@ void DecodeThread::Run()
                     audio_player_->Play(data, data_size);
 
                 } else {
-                    AVFrame* rgbFrame = nullptr;
-                    // rgbFrame = RGBFrameFromYUV(frame);
-                    current_frame_ms = waitForReachPtsTime(frame);
                     qDebug() << "v frame_time:" << current_frame_ms;
-                    emit getReadyFrameTime(current_frame_ms);
-                    if (rgbFrame) {
-                        // frame_queue_->Push(rgbFrame); // AVFrameQueue::Push()
-                        emit getReadyFrame(rgbFrame);
+#define AVFRAME_RGB
 
-                    } else {
-                        emit getReadyFrame(frame);
-                        // frame_queue_->Push(frame);
-                    }
+#ifdef AVFRAME_RGB
+                    std::shared_ptr<AVFrame> rgbFrame(RGBFrameFromYUV(frame), AVFrameDeleter);
+
+                    current_frame_ms = waitForReachPtsTime(frame);
+                    emit getReadyFrameTime(current_frame_ms);
+                    emit getReadyFrame(rgbFrame);
+#else
+                    std::shared_ptr<AVFrame> yuvFrame(av_frame_clone(frame), AVFrameDeleter); // 自定义删除器，用于释放yuvFrame
+
+                    current_frame_ms = waitForReachPtsTime(frame);
+                    emit getReadyFrameTime(current_frame_ms);
+                    emit getReadyFrame(yuvFrame);
+#endif
                 }
                 continue;
             } else if (ret == AVERROR(EAGAIN)) {

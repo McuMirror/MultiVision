@@ -76,6 +76,8 @@ Player::~Player()
 
     video_decode_thread->Stop();
     delete video_decode_thread;
+
+    delete audio_ouput;
 }
 int Player::initialization(QString videoPath)
 {
@@ -106,7 +108,7 @@ int Player::initialization(QString videoPath)
 
     // 把解码的帧发射出去
     connect(
-        video_decode_thread, &DecodeThread::getReadyFrame, this, [&](AVFrame* frame) { emit getReadyFrame(frame); }, Qt::QueuedConnection);
+        video_decode_thread, &DecodeThread::getReadyFrame, this, [&](std::shared_ptr<AVFrame> frame) { emit getReadyFrame(frame); }, Qt::QueuedConnection);
     // 发送音频信号到播放函数
     connect(audio_ouput, &QAudioPlayer::audioOutput_sig, demux_thread, &DemuxThread::on_audioOutput, Qt::QueuedConnection);
 
