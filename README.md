@@ -27,7 +27,8 @@ QT+OPENCV处理UVC/串口/本地图像，执行滤波、人脸识别等
 - 📝 终端字符界面输出
 
 ## 技术亮点
-- 多线程处理
+- 多线程处理(视频解包解码线程分离)
+- OPENCV图像处理，算法可串联
 - OPENGL硬件渲染
 - 文本(字符画输出)  
 ![image](https://github.com/minasanohayo/MultiVision/blob/main/BAD_APPLE_2025.gif "preview")
