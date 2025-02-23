@@ -1,7 +1,7 @@
 # MultiVision
 QT+OPENCV+FFMPEG+OPENGL 处理UVC/串口/本地图像，执行滤波、人脸识别等
 支持多源输入与实时视觉处理以及多源输出
-
+依赖opencv-4.10.0, ffmpeg-n6.1, Qt6 OpenGL Widgets module
 ## 核心功能
 
 ### 多源输入支持
