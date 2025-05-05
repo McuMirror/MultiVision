@@ -32,4 +32,7 @@ QT+OPENCV处理UVC/串口/本地图像，执行滤波、人脸识别等
 - 文本(字符画输出) 
 
 ![image](https://github.com/minasanohayo/MultiVision/blob/main/BAD_APPLE_2025.gif "preview")
+![image](https://github.com/minasanohayo/MultiVision/blob/main/QQ20250221-223305.png "preview")
+![image](https://github.com/minasanohayo/MultiVision/blob/main/SIFT.gif "SIFT_preview")
+
   
