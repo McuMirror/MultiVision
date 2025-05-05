@@ -2,10 +2,11 @@
 // #include "ft2build.h"
 #include "ui_usb_receiver.h"
 #include "xe_qtcvutils.h"
-
 #include <QMessageBox>
 #include <QRandomGenerator>
+#include <QSettings>
 #include <freetype.hpp>
+#include <iostream>
 // #include FT_FREETYPE_H
 #include <QElapsedTimer>
 #include <opencv.hpp>
@@ -14,7 +15,9 @@
 #include <opencv_modules.hpp>
 
 using namespace cv;
-
+QSettings settings("sssetting.ini", QSettings::IniFormat);
+cv::Mat templ;
+cv::Mat templ_gray;
 USB_Receiver::USB_Receiver(QWidget* parent)
     : QMainWindow(parent)
     , ui(new Ui::USB_Receiver)
@@ -62,6 +65,16 @@ USB_Receiver::USB_Receiver(QWidget* parent)
     qDebug() << ui->asciiTextBrowser->font().pointSize();
 
     cv::setUseOptimized(false); // OPENCV禁用优化,否则 BGR->YUV转不了，不知道为什么
+
+    ui->thresholdScrollBar->setValue(settings.value("thresholdScrollBar").toInt());
+    ui->thresholdScrollBar_2->setValue(settings.value("thresholdScrollBar_2").toInt());
+
+    ui->cannyThreshold1ScrollBar->setValue(settings.value("cannyThreshold1ScrollBar").toInt());
+    ui->cannyThreshold2ScrollBar->setValue(settings.value("cannyThreshold2ScrollBar").toInt());
+
+    templ = cv::imread("C:/Users/commander/Pictures/QQ20250505-181623.png", cv::IMREAD_COLOR);
+    templ_gray = cv::imread("C:/Users/commander/Pictures/QQ20250505-181623.png", cv::IMREAD_GRAYSCALE);
+    m_cv.template_sift_init(templ);
 
 #define TEST_BLOCK 0
 #if TEST_BLOCK
@@ -123,6 +136,12 @@ USB_Receiver::USB_Receiver(QWidget* parent)
 USB_Receiver::~USB_Receiver()
 {
 
+    settings.setValue("thresholdScrollBar", ui->thresholdScrollBar->value());
+    settings.setValue("thresholdScrollBar_2", ui->thresholdScrollBar->value());
+    qDebug() << "thresholdScrollBar";
+    settings.setValue("cannyThreshold1ScrollBar", ui->cannyThreshold1ScrollBar->value());
+    settings.setValue("cannyThreshold2ScrollBar", ui->cannyThreshold2ScrollBar->value());
+    qDebug() << "cannyThreshold2ScrollBar";
     delete ui;
 }
 
@@ -296,8 +315,8 @@ void USB_Receiver::processes(cv::Mat& mat)
     if (ui->thresholdButton->isChecked()) {
         Xe_QtCVUtils::histogramStretching(mat, mat, ui->thresholdScrollBar->value(), ui->thresholdScrollBar_2->value());
     }
-    // 分割
-    if (ui->cannyButton->isChecked()) {
+    // canny分割
+    if (ui->cannyButton->isChecked() && !ui->packageDetect->isChecked()) {
         cv::Mat tmp = std::move(mat);
         Xe_QtCVUtils::edgeCanny(tmp, mat,
             ui->cannyThreshold1ScrollBar->value(),
@@ -310,7 +329,24 @@ void USB_Receiver::processes(cv::Mat& mat)
             //                     << "*" << mat.channels();
 
             // cv::imshow("canny", mat);
+
+            qDebug() << "符合条件的: " << Xe_QtCVUtils::__classification(mat);
         }
+    }
+    // --------------------------------------
+    else if (ui->packageDetect->isChecked()) {
+        cv::Mat _dst;
+        m_cv.packageDetect(mat, _dst,
+            ui->cannyThreshold1ScrollBar->value(),
+            ui->cannyThreshold2ScrollBar->value(),
+            3);
+
+        QImage _disp;
+        Xe_QtCVUtils::matToQImg(_dst, _disp); // Mat ..->..QImage
+
+        ui->imageWidget->updatePix(_disp);
+        return;
+        // --------------------------------------
     }
     if (ui->radioButton->isChecked())
         cv::bitwise_not(mat, mat);
@@ -344,6 +380,11 @@ void USB_Receiver::processes(cv::Mat& mat)
         m_detect.visualize(mat, face, 2);
     }
 
+    //********** sift匹配********************
+    if (ui->SIFT_BUTTON->isChecked()) {
+
+        m_cv.sift_detect(mat, mat);
+    }
     //  ----end with mat----
 
     // **************OPENGL START*************************************
@@ -361,7 +402,7 @@ void USB_Receiver::processes(cv::Mat& mat)
 
         ui->openGLWidget->paintMat(&mat);
     } else {
-        qDebug() << "ui->openGLWidget->isInit NO!";
+        // qDebug() << "ui->openGLWidget->isInit NO!";
     }
     // ***************OPENGL END**************************************
 
@@ -836,4 +877,15 @@ void USB_Receiver::on_playButton_clicked()
 void USB_Receiver::on_pauseButton_clicked()
 {
     m_player.pause();
+}
+
+void USB_Receiver::on_packageDetect_clicked()
+{
+    processes();
+}
+
+void USB_Receiver::on_SIFT_BUTTON_clicked()
+{
+
+    m_cv.f_sift(templ);
 }

@@ -649,8 +649,11 @@ color: rgb(255, 255, 255);</string>
            <pointsize>10</pointsize>
           </font>
          </property>
+         <property name="styleSheet">
+          <string notr="true"/>
+         </property>
          <property name="currentIndex">
-          <number>3</number>
+          <number>4</number>
          </property>
          <widget class="QWidget" name="Gray">
           <property name="geometry">
@@ -1214,7 +1217,10 @@ color: rgb(255, 255, 255);</string>
                 <number>1</number>
                </property>
                <property name="maximum">
-                <number>200</number>
+                <number>250</number>
+               </property>
+               <property name="value">
+                <number>100</number>
                </property>
                <property name="orientation">
                 <enum>Qt::Horizontal</enum>
@@ -1235,8 +1241,21 @@ color: rgb(255, 255, 255);</string>
                <property name="maximum">
                 <number>255</number>
                </property>
+               <property name="value">
+                <number>200</number>
+               </property>
                <property name="orientation">
                 <enum>Qt::Horizontal</enum>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QPushButton" name="packageDetect">
+               <property name="text">
+                <string>PushButton</string>
+               </property>
+               <property name="checkable">
+                <bool>true</bool>
                </property>
               </widget>
              </item>
@@ -1349,7 +1368,7 @@ border-color: rgba(119, 25, 170,220);
              </property>
              <property name="currentFont">
               <font>
-               <family>Microsoft YaHei UI</family>
+               <family>BatangChe</family>
                <pointsize>8</pointsize>
               </font>
              </property>
@@ -1474,6 +1493,16 @@ border-color: rgba(119, 25, 170,220);
            <string>Face Detector</string>
           </attribute>
           <layout class="QVBoxLayout" name="verticalLayout_2">
+           <item>
+            <widget class="QPushButton" name="SIFT_BUTTON">
+             <property name="text">
+              <string>SIFT</string>
+             </property>
+             <property name="checkable">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
            <item>
             <widget class="QPushButton" name="detectButton">
              <property name="sizePolicy">

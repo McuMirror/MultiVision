@@ -204,8 +204,8 @@ void GLWidget::paintMat(cv::Mat* mat) // 原来是AVFrame* frame
 {
 
     if (mat->type() == CV_8UC3) {
-        qDebug() << "mat->type() == CV_8UC3 ->>>" << mat->type();
-        // 如果是 RGB 图像，先转换为 YUV 420
+        // qDebug() << "mat->type() == CV_8UC3 ->>>" << mat->type();
+        //  如果是 RGB 图像，先转换为 YUV 420
 
         cv::Mat clonedMat = mat->clone();
 
@@ -225,7 +225,7 @@ void GLWidget::paintMat(cv::Mat* mat) // 原来是AVFrame* frame
         imageHeight = mat->size().height;
         update();
     } else {
-        qDebug() << "mat->type() != CV_8UC3 ->>>" << mat->type();
+        // qDebug() << "mat->type() != CV_8UC3 ->>>" << mat->type();
     }
 }
 

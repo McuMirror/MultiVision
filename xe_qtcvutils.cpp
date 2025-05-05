@@ -447,4 +447,130 @@ void drawTextWithAsciiTable(cv::Ptr<cv::freetype::FreeType2> ft2, const std::vec
         pos.y += font_high;
     }
 }
+/*此函数用于canny分割之后
+ * 而对于canny分割：
+ * * @param image 8-bit input image.
+ * * @param edges output edge map; single channels 8-bit image, which has the same size as image .
+ * 所以src应该是单通道的 8-bit image
+ *void cv::findContours(
+    InputArray image,         // 输入图像（8-bit 单通道二值图）
+    OutputArrayOfArrays contours, // 输出的轮廓集合
+    OutputArray hierarchy,    // 轮廓的拓扑信息（可选）
+    int mode,                 // 轮廓检索模式
+    int method,               // 轮廓近似方法
+    Point offset = Point()    // 轮廓点偏移量（可选）
+)
+ */
+int __classification(const cv::Mat& canny_edges)
+{
+
+    std::vector<std::vector<cv::Point>> contours;
+    cv::findContours(canny_edges.clone(), contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
+
+    const int src_width = canny_edges.size().width;
+    const int src_height = canny_edges.size().height;
+    const int src_area = src_width * src_height;
+
+    const float MIN_AREA = src_area * 0.2; //
+    const float MAX_RATIO = 2.0f; // 最大宽高比
+    const float MIN_RATIO = 0.8f;
+
+    int valid_rect_count = 0;
+
+    for (const auto& cnt : contours) {
+        // 去掉小的
+        if (cv::contourArea(cnt) < MIN_AREA)
+            continue;
+
+        // 获取最小外接旋转矩形
+        cv::RotatedRect rect = cv::minAreaRect(cnt);
+
+        // 计算长宽比（总保证width >= height）
+        float width = rect.size.width;
+        float height = rect.size.height;
+        if (width < height)
+            std::swap(width, height);
+
+        float wh_ratio = width / height;
+
+        // 判断是否为合理矩形
+        if (wh_ratio <= MAX_RATIO) {
+            valid_rect_count++;
+        }
+    }
+
+    // 符合的数量
+    // return valid_rect_count;
+    // 分类
+    return valid_rect_count > 1 ? 2 : 1;
+}
+
+void dsad()
+{
+    // cv::dft(); // 离散傅里叶变换
+}
+
+void myFilter2D(const cv::Mat& src, cv::Mat& dst, const cv::Mat& kernel,
+    cv::Point anchor = cv::Point(-1, -1),
+    int borderType = cv::BORDER_DEFAULT)
+{
+    // cv::filter;
+    /*
+     * -做padding：根据kernel扩展图像，把原图搬运到padded后的mat中
+     * -
+
+   */
+
+    // 参数检查
+    CV_Assert(!src.empty() && !kernel.empty());
+    CV_Assert(kernel.type() == CV_32F);
+    CV_Assert(src.channels() == 1); // 简化处理单通道
+
+    // 初始化锚点（默认核中心）
+    // 3×3的话就是(1,1)
+    // 5*5的话就是(2,2)
+    if (anchor == cv::Point(-1, -1)) {
+        anchor = cv::Point(kernel.cols / 2, kernel.rows / 2);
+    }
+
+    // 创建输出图像
+    dst.create(src.size(), src.type());
+
+    // 计算边界扩展范围（padding）
+    int padTop = anchor.y;
+    int padBottom = kernel.rows - anchor.y - 1; // 5-2-1=2
+    int padLeft = anchor.x;
+    int padRight = kernel.cols - anchor.x - 1;
+
+    // 扩展边界
+    cv::Mat padded; // src  -拷贝->  padded
+    cv::copyMakeBorder(src, padded, padTop, padBottom, padLeft, padRight, borderType);
+
+    // 遍历每个像素进行卷积
+    for (int y = 0; y < src.rows; ++y) {
+
+        uchar* dstRow = dst.ptr<uchar>(y); // 拿到输出图像第y行的指针
+
+        for (int x = 0; x < src.cols; ++x) {
+
+            float sum = 0.0f;
+
+            // 一次卷积
+            for (int ky = 0; ky < kernel.rows; ++ky) {
+
+                // 卷积核的第ky行，与输入图像padded的 y+ky 行
+                const float* kRow = kernel.ptr<float>(ky);
+                const uchar* pRow = padded.ptr<uchar>(y + ky);
+
+                for (int kx = 0; kx < kernel.cols; ++kx) {
+                    int px = x + kx;
+                    sum += pRow[px] * kRow[kx];
+                }
+            }
+            // dstRow[x] = static_cast<uchar>(sum);
+            dstRow[x] = cv::saturate_cast<uchar>(sum); // 强制转换时饱和处理
+        }
+    }
+}
+
 }

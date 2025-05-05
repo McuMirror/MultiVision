@@ -1,6 +1,7 @@
 #ifndef USB_RECEIVER_H
 #define USB_RECEIVER_H
 #include "detectprocess.h"
+#include "mcv.h"
 #include "player/player.h"
 #include "xe_qtcvutils.h"
 #include "xeimage.h"
@@ -11,6 +12,7 @@
 #include <QScrollBar>
 #include <QSerialPort>
 #include <QSerialPortInfo>
+#include <QSettings>
 #include <QTimer>
 #include <list>
 QT_BEGIN_NAMESPACE
@@ -26,6 +28,7 @@ public:
     USB_Receiver(QWidget* parent = nullptr);
     ~USB_Receiver();
     void processes(cv::Mat& mat);
+
 public slots:
     void processes(); // with m_image
 
@@ -110,6 +113,10 @@ private slots:
 
     void on_pauseButton_clicked();
 
+    void on_packageDetect_clicked();
+
+    void on_SIFT_BUTTON_clicked();
+
 private:
     Ui::USB_Receiver* ui;
     void updatePortList(); // 更新com口列表
@@ -136,6 +143,7 @@ private:
     DetectProcess m_detect;
     Player m_player;
     cv::VideoCapture uvcCap; // uvc class
+    mCv m_cv;
 
 protected:
     void dropEvent(QDropEvent* event) override;

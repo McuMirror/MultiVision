@@ -41,6 +41,7 @@ SOURCES += \
     detectprocess.cpp \
     glwidget.cpp \
     main.cpp \
+    mcv.cpp \
     player/avpacketqueue.cpp \
     player/decodethread.cpp \
     player/demuxthread.cpp \
@@ -54,6 +55,7 @@ HEADERS += \
     detectprocess.h \
     glwidget.h \
     imagewidget.h \
+    mcv.h \
     player/avpacketqueue.h \
     player/decodethread.h \
     player/demuxthread.h \

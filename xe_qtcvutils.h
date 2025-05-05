@@ -70,6 +70,7 @@ void drawTextWithAsciiTable(cv::Ptr<cv::freetype::FreeType2> ft2,
 QString vectorToQString(const std::vector<std::vector<QChar>>& data);
 UtilsStatus histogramStretching(cv::Mat& src, cv::Mat& dst, int threshold1, int threshold2);
 
+int __classification(const cv::Mat& canny_edges);
 };
 
 #endif // XE_QTCVUTILS_H
