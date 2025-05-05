@@ -18,6 +18,7 @@ QT+OPENCV处理UVC/串口/本地图像，执行滤波、人脸识别等
 - 边缘检测（Canny/Sobel）
 
 #### 高级功能
+- SIFT匹配
 - 实时人脸检测（face detect）
 - 艺术效果生成（ASCII字符画转换）
 
