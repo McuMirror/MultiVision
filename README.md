@@ -17,12 +17,8 @@ QT+OPENCV+FFMPEG+OPENGL 处理UVC/串口/本地图像，执行滤波、人脸识
 - 边缘检测（Canny/Sobel）
 
 #### 高级功能
-<<<<<<< HEAD
-- 实时人脸检测（Face Detect）
-=======
 - SIFT匹配
 - 实时人脸检测（face detect）
->>>>>>> eaf69284dd0d40a4a63ad8f260ceac2708b6ce74
 - 艺术效果生成（ASCII字符画转换）
 
 ### 多模态输出
